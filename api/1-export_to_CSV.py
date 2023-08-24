@@ -48,24 +48,25 @@ STATUS CODE FOR REQUESTS
             did not receive a timely response from an upstream server.
 """
 import requests
-import sys
+from sys import argv
 
 
-if __name__ == '__main__':
-    user_id = sys.argv[1]
-    user_url = "https://jsonplaceholder.typicode.com/users/{}".format(user_id)
-    todos_url = user_url + "/todos/"
+if __name__ == "__main__":
+    API_URL = "https://jsonplaceholder.typicode.com/"
 
-    user_info = requests.request('GET', user_url).json()
-    todos_info = requests.request('GET', todos_url).json()
+    user_id = argv[1]
+    response = requests.get("{}users/{}/todos".format(API_URL, user_id),
+                            params={"_expand": "user"})
 
-    emp_name = user_info["name"]
-    task_completed = list(filter(lambda obj:
-                                 (obj["completed"] is True), todos_info))
-    number_tasks = len(task_completed)
-    total_tasks = len(todos_info)
+    if response.status_code == 200:
+        data = response.json()
+        name = data[0]["user"]["name"]
+        task_done = [task for task in data if task["completed"]]
 
-    print("Employee {} is done with tasks({}/{}):".
-          format(emp_name, number_tasks, total_tasks))
+        print("Employee {} is done with tasks({}/{}):".format(
+            name, len(task_done), len(data)))
+        for task in task_done:
+            print("\t {}".format(task["title"]))
 
-    [print("\t " + task["title"]) for task in task_completed]
+    else:
+        print("Error: {}".format(response.status_code))
