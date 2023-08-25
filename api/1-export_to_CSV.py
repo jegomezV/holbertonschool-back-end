@@ -47,26 +47,21 @@ STATUS CODE FOR REQUESTS
     -504 Gateway Timeout: Similar to 502, Server acting as a gateway or proxy
             did not receive a timely response from an upstream server.
 """
+import csv
 import requests
-from sys import argv
+import sys
 
 
-if __name__ == "__main__":
-    API_URL = "https://jsonplaceholder.typicode.com/"
+if __name__ == '__main__':
+    user_id = sys.argv[1]
+    user_url = "https://jsonplaceholder.typicode.com/users/{}".format(user_id)
+    todos_url = user_url + "/todos/"
 
-    user_id = argv[1]
-    response = requests.get("{}users/{}/todos".format(API_URL, user_id),
-                            params={"_expand": "user"})
+    user_info = requests.request('GET', user_url).json()
+    todos_info = requests.request('GET', todos_url).json()
 
-    if response.status_code == 200:
-        data = response.json()
-        name = data[0]["user"]["name"]
-        task_done = [task for task in data if task["completed"]]
-
-        print("Employee {} is done with tasks({}/{}):".format(
-            name, len(task_done), len(data)))
-        for task in task_done:
-            print("\t {}".format(task["title"]))
-
-    else:
-        print("Error: {}".format(response.status_code))
+    with open('{}.csv'.format(user_id), 'w') as csvfile:
+        csvwriter = csv.writer(csvfile, quoting=csv.QUOTE_ALL)
+        [csvwriter.writerow([user_id, user_info["username"],
+                             task["completed"], task["title"]])
+         for task in todos_info]
